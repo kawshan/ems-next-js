@@ -1,25 +1,27 @@
 "use client"
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Label} from "@/components/ui/label";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
+import {Card,CardContent,CardDescription,CardFooter,CardHeader,CardTitle,} from "@/components/ui/card"
+import {Table,TableBody,TableCaption,TableCell,TableHead,TableHeader,TableRow,} from "@/components/ui/table"
+
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
-import {createEmployee} from "@/service/employee/employeeService";
+    createEmployee,
+    deleteEmployeeService,
+    listAllEmployees,
+    updateEmployeeService
+} from "@/service/employee/employeeService";
 import {useRouter} from "next/navigation";
 
 function Page(props) {
 
+    const [id, setId] = useState("");
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
     const router = useRouter();
+    const [employeeList, setEmployeeList] = useState([]);
 
     const handelSubmit = (e) => {
         e.preventDefault();
@@ -37,13 +39,69 @@ function Page(props) {
     }
 
 
+
+    useEffect(()=>{
+        getAllEmployees();
+    },[])
+
+
+    function getAllEmployees(){
+        listAllEmployees().then((response)=>{
+            console.log(response.status);
+            setEmployeeList(response.data);
+        }).catch(error=>{
+            console.log(error);
+        })
+    }
+
+
+    function refillEmployee (employeeOb){
+        setFirstName(employeeOb.firstName);
+        setLastName(employeeOb.lastName);
+        setEmail(employeeOb.email);
+        setId(employeeOb.id);
+    }
+
+
+    function updateEmployee(){
+
+        const editEmployee ={firstName,lastName,email}
+        console.log(`Edit employee object is ${JSON.stringify(editEmployee)}`);
+
+        updateEmployeeService(id,editEmployee).then((response)=>{
+            console.log(`updated data ${response.data}`);
+        }).catch(error=>{
+            console.log(error);
+        });
+    }
+
+
+
+    async function deleteEmployee(id){
+        try {
+            await deleteEmployeeService(id);
+            alert(`Employee deleted successfully`);
+            getAllEmployees();
+        }catch (error){
+            console.error(`error happened during deleting employee`);
+            alert(`error happened during deleting employee`);
+            router.refresh()
+
+        }
+    }
+
+
+
+
     return (
         <div>
-
+            {/*header section start*/}
             <div className="bg-slate-700 p-4">
                 <p className="text-2xl text-center text-white">Employee Master</p>
             </div>
+            {/*header section end*/}
 
+            {/*form section start*/}
             <Card className="w-full">
                 <CardTitle>
                     <CardHeader>
@@ -86,7 +144,7 @@ function Page(props) {
                                 </div>
 
                                 <div className="flex justify-center w-5/12">
-                                    <Button variant="default">Update</Button>
+                                    <Button variant="default" onClick={updateEmployee}>Update</Button>
                                 </div>
 
                                 <div className="flex justify-end me-2">
@@ -101,6 +159,59 @@ function Page(props) {
                     </CardContent>
                 </CardTitle>
             </Card>
+            {/*    form section end*/}
+
+
+            {/*  employee table start  */}
+
+            <div className="w-full p-5">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Employee Table</CardTitle>
+                    <CardDescription>All employees are shown in here</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader className="bg-slate-700">
+                            <TableRow>
+                                <TableHead className="text-white text-center">#</TableHead>
+                                <TableHead className="text-white text-center">First Name</TableHead>
+                                <TableHead className="text-white text-center">Last Name</TableHead>
+                                <TableHead className="text-white text-center">Email</TableHead>
+                                <TableHead className="text-white text-center">Action</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {
+                                employeeList.map((employee,index)=>(
+                                    <TableRow key={index}>
+                                        <TableCell className="text-center">{index=index+1}</TableCell>
+                                        <TableCell className="text-center">{employee.firstName}</TableCell>
+                                        <TableCell className="text-center">{employee.lastName}</TableCell>
+                                        <TableCell className="text-center">{employee.email}</TableCell>
+                                        <TableCell className="text-end">
+                                        <Button type="button" className="me-2" variant="default" onClick={()=>refillEmployee(employee)}>refill</Button>
+                                        <Button type="button" className="me-2" variant="default" onClick={()=>deleteEmployee(employee.id)}>delete</Button>
+                                        <Button type="button" className="me-2" variant="default">print</Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            }
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+            </div>
+
+
+
+
+
+
+
+            {/*  employee table end  */}
+
+
         </div>
 );
 }
